@@ -11,23 +11,80 @@ client.connect(function () {
   const db = client.db('cinema');
 
   app.get('/films', function (request, response) {
-    response.send('Retrieve all the films');
+    const collection = db.collection('films');
+    const searchObject = {};
+
+    collection.find(searchObject).toArray(function (error, docs) {
+      if (error) {
+        response.status(500).send(error);
+      } else {
+        response.status(200).send(docs);
+      }
+    });
   });
 
   app.get('/films/:id', function (request, response) {
-    response.send('Retrieve one film');
+    const collection = db.collection('films');
+    const id = new mongodb.ObjectId(request.params.id);
+    const searchObject = { _id: id };
+
+    collection.findOne(searchObject, function (error, doc) {
+      if (error) {
+        response.status(500).send(error);
+      } else if (doc) {
+        response.status(200).send(doc);
+      } else {
+        response.sendStatus(404);
+      }
+    });
   });
 
   app.post('/films', function (request, response) {
-    response.send('Create a film');
+    const collection = db.collection('films');
+    const data = request.body;
+
+    collection.insertOne(data, function (error, result) {
+      if (error) {
+        response.status(500).send(error);
+      } else {
+        response.status(200).send(result.ops[0]);
+      }
+    });
   });
 
   app.put('/films/:id', function (request, response) {
-    response.send('Update one film');
+    const collection = db.collection('films');
+    const id = new mongodb.ObjectId(request.params.id);
+    const searchObject = { _id: id };
+    delete request.body._id;
+    const data = { $set: request.body };
+    const options = { returnOriginal: false };
+
+    collection.findOneAndUpdate(searchObject, data, options, function (error, result) {
+      if (error) {
+        response.status(500).send(error);
+      } else if (result.ok) {
+        response.status(200).send(result.value);
+      } else {
+        response.sendStatus(404);
+      }
+    });
   });
 
   app.delete('/films/:id', function (request, response) {
-    response.send('Delete one film');
+    const collection = db.collection('films');
+    const id = new mongodb.ObjectId(request.params.id);
+    const searchObject = { _id: id };
+
+    collection.deleteOne(searchObject, function (error, result) {
+      if (error) {
+        response.status(500).send(error);
+      } else if (result.ok) {
+        response.sendStatus(204);
+      } else {
+        response.sendStatus(404);
+      }
+    });
   });
 
   app.listen(3000);
